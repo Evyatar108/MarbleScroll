@@ -35,7 +35,7 @@ namespace MarbleScroll.UI
             {
                 ContextMenuStrip = contextMenuStrip1,
                 Icon = this.Icon, // Use the form's icon which is loaded by the Designer
-                Text = "Scrolly",
+                Text = "Marble Scroll",
                 Visible = true
             };
         }
