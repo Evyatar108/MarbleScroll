@@ -30,22 +30,11 @@ namespace MarbleScroll.UI
 
         private void InitializeSystray()
         {
-            // Load icon directly from file to avoid namespace issues
-            Icon appIcon = null;
-            try
-            {
-                appIcon = new Icon("icon.ico");
-            }
-            catch
-            {
-                // Fallback to default system icon if file not found
-                appIcon = SystemIcons.Application;
-            }
-            
+            // Use the icon from Designer resources - it's set in InitializeComponent()
             trayIcon = new NotifyIcon(this.components)
             {
                 ContextMenuStrip = contextMenuStrip1,
-                Icon = appIcon,
+                Icon = this.Icon, // Use the form's icon which is loaded by the Designer
                 Text = "Scrolly",
                 Visible = true
             };
