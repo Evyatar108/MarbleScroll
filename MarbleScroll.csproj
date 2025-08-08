@@ -14,6 +14,13 @@
     <FileVersion>1.0.0.0</FileVersion>
     <ComVisible>false</ComVisible>
     <Guid>1ed5b841-8b54-4089-b0a9-95294ad39c1b</Guid>
+    
+    <!-- Optimized deployment settings for smaller size -->
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
