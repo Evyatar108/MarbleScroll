@@ -20,4 +20,9 @@
     <Content Include="icon.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="original\**\*.cs" />
+    <EmbeddedResource Remove="original\**\*.resx" />
+    <None Remove="original\**\*" />
+  </ItemGroup>
 </Project>

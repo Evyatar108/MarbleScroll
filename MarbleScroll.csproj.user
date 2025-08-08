@@ -2,7 +2,13 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup />
   <ItemGroup>
-    <Compile Update="MarbleForm.cs">
+    <Compile Update="original\MarbleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="original\MarbleScroll\MarbleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\MarbleForm.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

@@ -1,33 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using MarbleScroll.Core;
+using MarbleScroll.UI;
 
 namespace MarbleScroll
 {
     static class Program
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
+        private static MarbleScrollService scrollService;
+
         [STAThread]
         static void Main()
         {
-            Global.marbleScroll = new MarbleScroll();
-            Global.marbleScroll.FocusWindow = false;
-            Global.marbleScroll.Start();
-
+            scrollService = new MarbleScrollService();
+            scrollService.Start();
+            
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.ApplicationExit += new EventHandler(Exit);
-            MarbleForm form = new MarbleForm();
+            Application.ApplicationExit += Exit;
+            
+            // Create form but don't pass to Application.Run to avoid exit on form close
+            var form = new MarbleForm();
             Application.Run();
         }
-
         static void Exit(object sender, EventArgs e)
         {
-            Global.marbleScroll.Stop();
+            scrollService?.Stop();
         }
     }
 }
