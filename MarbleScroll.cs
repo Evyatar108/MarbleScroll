@@ -1,44 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MarbleScroll
 {
-
-    class MarbleScroll
+    public class MarbleScroll
     {
-
+        public bool FocusWindow { get; set; }
         private IntPtr hookID = IntPtr.Zero;
         private LowLevelMouseProc hookCallback;
 
-		// horizontal scroll
-        private const int SENSITIVITY_X = 200;	// mouse move required for one scroll
-        private const int DISTANCE_X = 200;		// one scroll distance
+        private const int SENSITIVITY_X = 200;
+        private const int DISTANCE_X = 200;
+        private const int SENSITIVITY_Y = 50;
+        private const int DISTANCE_Y = 200;
 
-		// vertical scroll
-        private const int SENSITIVITY_Y = 50;	// mouse move required for one scroll
-        private const int DISTANCE_Y = 200;		// one scroll distance
-        
-		// are we scrolling or just pressing the button?
         private bool isScroll = false;
-		// if we are scrolling, intercept back button action
-        private bool disableBackButton = false;
-        // when we are simulating middle click
-        private bool simulatingMiddleClick = false;
+        private bool supressButtonClick = false;
 
-        // some coordinates for detecting scroll
         private int startX;
         private int startY;
         private int dx;
         private int dy;
 
+        private const uint backButton = 1;
+        private const uint forwardButton = 2;
+
         public MarbleScroll()
         {
-            // we need this, else gc will collect it
             hookCallback = HookCallback;
         }
 
@@ -60,116 +50,155 @@ namespace MarbleScroll
                 return SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
             }
         }
-        
-		// main code for scrolling
+
+        private uint GetXButton(uint hookStruct)
+        {
+            return (hookStruct & 0xFFFF0000) >> 16;
+        }
+
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             MouseMessages type = (MouseMessages)wParam;
             MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+            uint xButton = GetXButton(hookStruct.mouseData);
 
-            if (type == MouseMessages.WM_BACKBUTTONDOWN || type == MouseMessages.WM_MBUTTONDOWN && !simulatingMiddleClick)
+            if (IsXButtonDown(type, xButton))
             {
-                isScroll = true;
-                disableBackButton = false;
-                startX = hookStruct.pt.x;
-                startY = hookStruct.pt.y;
-                dx = 0;
-                dy = 0;
-
-				// for scrolling in window under mouse pointer
-                POINT p = new POINT();
-                p.x = startX;
-                p.y = startY;
-                IntPtr focusWindow = WindowFromPoint(p);
-                IntPtr foregroundWindow = GetForegroundWindow();
-				
-				// only focus is window is not already focused
-                if (GetAncestor(foregroundWindow, 3) != GetAncestor(focusWindow, 3))
-                    SetForegroundWindow(focusWindow);
-					
-                return new IntPtr(1);
+                return HandleXButtonDown(hookStruct);
             }
-            else if (type == MouseMessages.WM_BACKBUTTONUP || type == MouseMessages.WM_MBUTTONUP && !simulatingMiddleClick)
+            else if (IsXButtonUp(type, xButton))
             {
-                isScroll = false;
-                if (disableBackButton)
-                {
-                    return new IntPtr(1);
-                }
-                else
-                {
-                    if (type == MouseMessages.WM_MBUTTONUP)
-                    {
-                        simulatingMiddleClick = true;
-                        Task.Factory.StartNew(() =>
-                        {
-                            mouse_event((uint)MouseEvents.MIDDLEDOWN, (uint)hookStruct.pt.x, (uint)hookStruct.pt.y, 0, UIntPtr.Zero);
-                            mouse_event((uint)MouseEvents.MIDDLEUP, (uint)hookStruct.pt.x, (uint)hookStruct.pt.y, 0, UIntPtr.Zero);
-                        });
-                        return new IntPtr(1);
-                    }
-                }
+                return HandleXButtonUp();
             }
-            else if(simulatingMiddleClick && type == MouseMessages.WM_MBUTTONUP)
+            else if (IsScrolling(type))
             {
-                simulatingMiddleClick = false;
+                return HandleMouseMove(hookStruct);
             }
-            else if (isScroll && type == MouseMessages.WM_MOUSEMOVE)
-            {
-                dx += hookStruct.pt.x - startX;
-                dy += hookStruct.pt.y - startY;
 
-				// horizontal
-                if (Math.Abs(dx) > SENSITIVITY_X)
-                {
-                    int d = DISTANCE_X;
-                    if (dx < 0)
-                    {
-                        d *= -1;
-                        dx += SENSITIVITY_X;
-                    }
-                    else
-                        dx -= SENSITIVITY_X;
-
-                    // reset vertical scroll (because vertical is more sensitive)
-                    dy = 0;
-					
-					// scroll me (:
-                    // need to run in different thread, as it takes to long to execute mouse_event and windows doesn't like it
-                    Task.Factory.StartNew(() =>
-                    {
-                        mouse_event((uint)MouseEvents.HWHEEL, 0U, 0U, d, UIntPtr.Zero);
-                    });
-                    disableBackButton = true;
-                }
-				
-				// vertical
-                if (Math.Abs(dy) > SENSITIVITY_Y)
-                {
-                    int d = DISTANCE_Y;
-                    if (dy > 0)
-                    {
-                        d *= -1;
-                        dy -= SENSITIVITY_Y;
-                    }
-                    else
-                        dy += SENSITIVITY_Y;
-
-					// scroll me (:
-                    // need to run in different thread, as it takes to long to execute mouse_event and windows doesn't like it
-                    Task.Factory.StartNew(() => { 
-                        mouse_event((uint)MouseEvents.WHEEL, 0U, 0U, d, UIntPtr.Zero);
-                    });
-                    disableBackButton = true;
-                }
-
-                return new IntPtr(1);
-            }
-			
-			// nothing for me? pass it to next hook
             return CallNextHookEx(hookID, nCode, wParam, lParam);
         }
 
+        private bool IsXButtonDown(MouseMessages type, uint xButton)
+        {
+            return type == MouseMessages.WM_XBUTTONDOWN && (xButton == backButton || xButton == forwardButton);
+        }
+
+        private bool IsXButtonUp(MouseMessages type, uint xButton)
+        {
+            return type == MouseMessages.WM_XBUTTONUP && (xButton == backButton || xButton == forwardButton);
+        }
+
+        private bool IsScrolling(MouseMessages type)
+        {
+            return isScroll && type == MouseMessages.WM_MOUSEMOVE;
+        }
+
+        private IntPtr HandleXButtonDown(MSLLHOOKSTRUCT hookStruct)
+        {
+            InitializeScrollState(hookStruct);
+            return new IntPtr(1);
+        }
+
+        private void InitializeScrollState(MSLLHOOKSTRUCT hookStruct)
+        {
+            isScroll = true;
+            supressButtonClick = false;
+            startX = hookStruct.pt.x;
+            startY = hookStruct.pt.y;
+            dx = 0;
+            dy = 0;
+        }
+
+        private IntPtr HandleXButtonUp()
+        {
+            isScroll = false;
+            if (supressButtonClick)
+            {
+                return new IntPtr(1);
+            }
+            return IntPtr.Zero;
+        }
+
+        private IntPtr HandleMouseMove(MSLLHOOKSTRUCT hookStruct)
+        {
+            UpdateScrollDeltas(hookStruct);
+            ProcessHorizontalScroll();
+            ProcessVerticalScroll();
+            return new IntPtr(1);
+        }
+
+        private void UpdateScrollDeltas(MSLLHOOKSTRUCT hookStruct)
+        {
+            dx += hookStruct.pt.x - startX;
+            dy += hookStruct.pt.y - startY;
+        }
+
+        private void ProcessHorizontalScroll()
+        {
+            if (Math.Abs(dx) > SENSITIVITY_X)
+            {
+                int scrollDirection = CalculateHorizontalScrollDirection();
+                dy = 0;
+                ExecuteHorizontalScroll(scrollDirection);
+                supressButtonClick = true;
+            }
+        }
+
+        private int CalculateHorizontalScrollDirection()
+        {
+            int direction = DISTANCE_X;
+            if (dx < 0)
+            {
+                direction *= -1;
+                dx += SENSITIVITY_X;
+            }
+            else
+            {
+                dx -= SENSITIVITY_X;
+            }
+            return direction;
+        }
+
+        private void ExecuteHorizontalScroll(int direction)
+        {
+            Task.Factory.StartNew(() =>
+            {
+                mouse_event((uint)MouseEvents.HWHEEL, 0U, 0U, direction, UIntPtr.Zero);
+            });
+        }
+
+        private void ProcessVerticalScroll()
+        {
+            if (Math.Abs(dy) > SENSITIVITY_Y)
+            {
+                int scrollDirection = CalculateVerticalScrollDirection();
+                ExecuteVerticalScroll(scrollDirection);
+                supressButtonClick = true;
+            }
+        }
+
+        private int CalculateVerticalScrollDirection()
+        {
+            int direction = DISTANCE_Y;
+            if (dy > 0)
+            {
+                direction *= -1;
+                dy -= SENSITIVITY_Y;
+            }
+            else
+            {
+                dy += SENSITIVITY_Y;
+            }
+            return direction;
+        }
+
+        private void ExecuteVerticalScroll(int direction)
+        {
+            Task.Factory.StartNew(() =>
+            {
+                mouse_event((uint)MouseEvents.WHEEL, 0U, 0U, direction, UIntPtr.Zero);
+            });
+        }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
@@ -187,43 +216,36 @@ namespace MarbleScroll
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern void mouse_event(uint dwFlags, uint dx, uint dy, int dwData, UIntPtr dwExtraInfo);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr WindowFromPoint(POINT Point);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
-        public static extern IntPtr GetForegroundWindow();
-
         private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
         private const int WH_MOUSE_LL = 14;
 
         private enum MouseMessages
         {
-            WM_LBUTTONDOWN      = 0x0201,
-            WM_LBUTTONUP        = 0x0202,
-            WM_MOUSEMOVE        = 0x0200,
-            WM_MOUSEWHEEL       = 0x020A,
-            WM_RBUTTONDOWN      = 0x0204,
-            WM_RBUTTONUP        = 0x0205,
-            WM_BACKBUTTONDOWN   = 0x020B,
-            WM_BACKBUTTONUP     = 0x020C,
-            WM_MBUTTONDOWN      = 0x0207,
-            WM_MBUTTONUP        = 0x0208
+            WM_LBUTTONDOWN = 0x0201,
+            WM_LBUTTONUP = 0x0202,
+            WM_MOUSEMOVE = 0x0200,
+            WM_MOUSEWHEEL = 0x020A,
+            WM_RBUTTONDOWN = 0x0204,
+            WM_RBUTTONUP = 0x0205,
+            WM_XBUTTONDOWN = 0x020B,
+            WM_XBUTTONUP = 0x020C,
+            WM_XBUTTONDBLCLK = 0x020D
         }
 
         private enum MouseEvents
         {
-            WHEEL       = 0x0800,
-            HWHEEL      = 0x1000,
-            MOVE        = 0x0001,
-            ABSMOVE     = 0x8001,
-            MIDDLEDOWN  = 0x0020,
-            MIDDLEUP    = 0x0040
+            ABSOLUTE = 0x8000,
+            LEFTDOWN = 0x0002,
+            LEFTUP = 0x0004,
+            MIDDLEDOWN = 0x0020,
+            MIDDLEUP = 0x0040,
+            MOVE = 0x0001,
+            RIGHTDOWN = 0x0008,
+            RIGHTUP = 0x0010,
+            XDOWN = 0x0080,
+            XUP = 0x0100,
+            WHEEL = 0x0800,
+            HWHEEL = 0x1000
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -242,7 +264,5 @@ namespace MarbleScroll
             public uint time;
             public IntPtr dwExtraInfo;
         }
-
     }
-
 }

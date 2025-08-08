@@ -8,28 +8,26 @@ namespace MarbleScroll
 {
     static class Program
     {
-
-        private static MarbleScroll marbleScroll;
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
-            marbleScroll = new MarbleScroll();
-            marbleScroll.Start();
-            
+            Global.marbleScroll = new MarbleScroll();
+            Global.marbleScroll.FocusWindow = false;
+            Global.marbleScroll.Start();
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.ApplicationExit += new EventHandler(Exit);
             MarbleForm form = new MarbleForm();
-            Application.Run(); 
+            Application.Run();
         }
 
         static void Exit(object sender, EventArgs e)
         {
-            marbleScroll.Stop();
+            Global.marbleScroll.Stop();
         }
     }
 }
