@@ -1,11 +1,11 @@
-using System;
-using System.Threading.Tasks;
-using MarbleScroll.Configuration;
-using MarbleScroll.Interop;
-using MarbleScroll.Models;
-
 namespace MarbleScroll.Core
 {
+    using System;
+    using System.Threading.Tasks;
+    using MarbleScroll.Configuration;
+    using MarbleScroll.Interop;
+    using MarbleScroll.Models;
+
     internal class ScrollProcessor
     {
         private readonly ScrollConfiguration config = new();

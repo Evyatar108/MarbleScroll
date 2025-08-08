@@ -1,8 +1,8 @@
-using System;
-using System.Runtime.InteropServices;
-
 namespace MarbleScroll.Interop
 {
+    using System;
+    using System.Runtime.InteropServices;
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct POINT
     {

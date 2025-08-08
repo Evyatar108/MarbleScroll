@@ -1,10 +1,10 @@
-﻿using System;
-using System.Windows.Forms;
-using MarbleScroll.Core;
-using MarbleScroll.UI;
-
-namespace MarbleScroll
+﻿namespace MarbleScroll
 {
+    using System;
+    using System.Windows.Forms;
+    using MarbleScroll.Core;
+    using MarbleScroll.UI;
+
     static class Program
     {
         private static MarbleScrollService scrollService;
@@ -23,6 +23,7 @@ namespace MarbleScroll
             var form = new MarbleForm();
             Application.Run();
         }
+
         static void Exit(object sender, EventArgs e)
         {
             scrollService?.Stop();

@@ -68,8 +68,8 @@
 
         #endregion
 
-                        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
-                        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
     }
 }
 

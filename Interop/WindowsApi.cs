@@ -1,8 +1,8 @@
-using System;
-using System.Runtime.InteropServices;
-
 namespace MarbleScroll.Interop
 {
+    using System;
+    using System.Runtime.InteropServices;
+
     internal static class WindowsApi
     {
         internal delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);

@@ -1,12 +1,11 @@
-using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using MarbleScroll.Configuration;
-using MarbleScroll.Core;
-using MarbleScroll.Interop;
-
 namespace MarbleScroll.Core
 {
+    using System;
+    using System.Diagnostics;
+    using System.Runtime.InteropServices;
+    using MarbleScroll.Configuration;
+    using MarbleScroll.Interop;
+
     public class MarbleScrollService
     {
         private IntPtr hookID = IntPtr.Zero;
