@@ -83,7 +83,7 @@ namespace MarbleScroll.Core
                 scrollProcessor.InitializeScroll(hookStruct);
                 
                 // Focus window under mouse pointer for scrolling
-                FocusWindowUnderMouse(hookStruct);
+                //FocusWindowUnderMouse(hookStruct);
                 
                 return new IntPtr(1);
             }
